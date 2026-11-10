@@ -1,0 +1,83 @@
+:root {
+    --bg: #f5f6f8; --card: #fff; --text: #1d2330; --muted: #6b7280; --border: #e3e6eb; --accent: #fb7a24;
+    --ok: #2e8b57; --warn: #b7791f; --error: #d64545;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #14161b; --card: #1d2027; --text: #e6e8ec; --muted: #9aa0aa; --border: #2c3039;
+        --ok: #4cbb7f; --warn: #e0a83a; --error: #f07070;
+    }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+header { padding: 28px 24px 12px; max-width: 1200px; margin: 0 auto; }
+h1 { margin: 0 0 4px; font-size: 1.6rem; }
+h1 span { color: var(--accent); }
+.sub { color: var(--muted); margin: 0 0 18px; }
+.sub a { color: var(--muted); }
+.versions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 12px; }
+.version {
+    background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 10px; font-size: .85rem; color: var(--muted);
+}
+.version b { color: var(--text); font-weight: 600; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+input[type=search], input[type=text], select {
+    padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--card); color: var(--text); font-size: .95rem;
+}
+input[type=search] { flex: 1; min-width: 200px; }
+.banner {
+    border: 1px solid var(--border); border-left: 4px solid var(--warn); background: var(--card);
+    border-radius: 8px; padding: 10px 14px; margin: 0 0 14px; white-space: pre-line;
+}
+.banner.ok { border-left-color: var(--ok); }
+.banner.error { border-left-color: var(--error); }
+
+/* Grille des projets */
+.grid {
+    max-width: 1200px; margin: 0 auto; padding: 12px 24px 40px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;
+}
+.card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px;
+    border-top: 4px solid var(--tech); transition: transform .12s, box-shadow .12s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+.name { font-weight: 600; font-size: 1.05rem; word-break: break-word; }
+.badge {
+    align-self: flex-start; background: var(--tech); color: #fff; font-size: .78rem;
+    padding: 3px 9px; border-radius: 99px; font-weight: 500;
+}
+.vhost { color: var(--accent); font-size: .85rem; word-break: break-all; }
+.date { color: var(--muted); font-size: .85rem; margin-top: auto; }
+.empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px; display: none; }
+
+/* Page de configuration des vhosts */
+.config { max-width: 1200px; margin: 0 auto; padding: 12px 24px 100px; }
+.config table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
+.config th, .config td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.config th { color: var(--muted); font-weight: 500; font-size: .85rem; }
+.config td input { width: 100%; }
+.config .project { font-weight: 600; padding-top: 18px; word-break: break-word; }
+.config .hint { color: var(--muted); font-size: .8rem; margin-top: 4px; }
+.config .hint.warn { color: var(--warn); }
+.config .hint.error { color: var(--error); }
+.config .status { padding-top: 18px; white-space: nowrap; }
+.config .status a { color: var(--accent); }
+.link-btn { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; font-size: .8rem; }
+.save-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border);
+    padding: 12px 24px; display: flex; justify-content: flex-end;
+}
+.save-bar button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 10px 22px;
+    font-size: .95rem; font-weight: 600; cursor: pointer;
+}
+@media (max-width: 720px) {
+    .config thead { display: none; }
+    .config tr, .config td { display: block; }
+    .config td { border: 0; padding: 6px 12px; }
+    .config tr { border-bottom: 1px solid var(--border); padding: 8px 0; }
+}

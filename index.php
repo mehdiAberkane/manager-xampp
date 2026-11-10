@@ -1,7 +1,8 @@
 <?php
 // Manager : liste les projets de htdocs avec leur techno principale et leur dernière modification.
 
-const ROOT = __DIR__ . '/..';
+require_once __DIR__ . '/vhosts.php';
+
 const MAX_FILES = 4000;
 const CACHE_TTL = 600;
 const IGNORED_DIRS = ['node_modules', 'vendor', '.git', '.svn', '.idea', '.vscode', 'dist', 'build',
@@ -154,14 +155,9 @@ if (!isset($_GET['refresh']) && $cache && time() - $cache['at'] < CACHE_TTL) {
     $scannedAt = $cache['at'];
 } else {
     $projects = [];
-    foreach (scandir(ROOT) as $entry) {
-        $path = ROOT . '/' . $entry;
-        if ($entry[0] === '.' || $entry === 'manager' || !is_dir($path)) {
-            continue;
-        }
-        $projects[] = ['name' => $entry] + scanProject($path);
+    foreach (projectNames() as $name) {
+        $projects[] = ['name' => $name] + scanProject(ROOT . '/' . $name);
     }
-    usort($projects, fn($a, $b) => strcasecmp($a['name'], $b['name']));
     $scannedAt = time();
     $versions = stackVersions();
     @file_put_contents($cacheFile, json_encode(['at' => $scannedAt, 'projects' => $projects, 'versions' => $versions]));
@@ -171,10 +167,8 @@ $versions ??= $cache['versions'] ?? stackVersions();
 $techs = array_count_values(array_column($projects, 'tech'));
 arsort($techs);
 
-function h(string $s): string
-{
-    return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-}
+$vhosts = loadVhosts();
+
 ?>
 <!doctype html>
 <html lang="fr">
@@ -183,49 +177,7 @@ function h(string $s): string
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Manager htdocs</title>
     <link rel="icon" type="image/svg+xml" href="/manager/favicon.svg">
-    <style>
-        :root {
-            --bg: #f5f6f8; --card: #fff; --text: #1d2330; --muted: #6b7280; --border: #e3e6eb; --accent: #fb7a24;
-        }
-        @media (prefers-color-scheme: dark) {
-            :root { --bg: #14161b; --card: #1d2027; --text: #e6e8ec; --muted: #9aa0aa; --border: #2c3039; }
-        }
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
-        header { padding: 28px 24px 12px; max-width: 1200px; margin: 0 auto; }
-        h1 { margin: 0 0 4px; font-size: 1.6rem; }
-        h1 span { color: var(--accent); }
-        .sub { color: var(--muted); margin: 0 0 18px; }
-        .versions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 12px; }
-        .version {
-            background: var(--card); border: 1px solid var(--border); border-radius: 6px;
-            padding: 4px 10px; font-size: .85rem; color: var(--muted);
-        }
-        .version b { color: var(--text); font-weight: 600; }
-        .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        input[type=search], select {
-            padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
-            background: var(--card); color: var(--text); font-size: .95rem;
-        }
-        input[type=search] { flex: 1; min-width: 200px; }
-        main {
-            max-width: 1200px; margin: 0 auto; padding: 12px 24px 40px;
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;
-        }
-        .card {
-            background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px;
-            text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px;
-            border-top: 4px solid var(--tech); transition: transform .12s, box-shadow .12s;
-        }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
-        .name { font-weight: 600; font-size: 1.05rem; word-break: break-word; }
-        .badge {
-            align-self: flex-start; background: var(--tech); color: #fff; font-size: .78rem;
-            padding: 3px 9px; border-radius: 99px; font-weight: 500;
-        }
-        .date { color: var(--muted); font-size: .85rem; margin-top: auto; }
-        .empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px; display: none; }
-    </style>
+    <link rel="stylesheet" href="/manager/style.css">
 </head>
 <body>
 <header>
@@ -235,8 +187,12 @@ function h(string $s): string
             <span class="version"><?= h($name) ?> <b><?= h($version) ?></b></span>
         <?php endforeach; ?>
     </div>
-    <p class="sub"><?= count($projects) ?> projets &middot; <a href="../dashboard/" style="color:var(--muted)">dashboard XAMPP</a> &middot; <a href="/phpmyadmin/" style="color:var(--muted)">phpMyAdmin</a>
-        &middot; analysé à <?= date('H:i', $scannedAt) ?> (<a href="?refresh=1" style="color:var(--muted)">rafraîchir</a>)</p>
+    <p class="sub"><?= count($projects) ?> projets &middot; <a href="/manager/config.php">vhosts</a>
+        &middot; <a href="/dashboard/">dashboard XAMPP</a> &middot; <a href="/phpmyadmin/">phpMyAdmin</a>
+        &middot; analysé à <?= date('H:i', $scannedAt) ?> (<a href="?refresh=1">rafraîchir</a>)</p>
+    <?php if (!isApplied($vhosts)): ?>
+        <div class="banner">Les vhosts ont changé : redémarrez Apache (XAMPP Control Panel &rarr; Apache &rarr; Stop puis Start).</div>
+    <?php endif; ?>
     <div class="toolbar">
         <input type="search" id="q" placeholder="Rechercher un projet…" autofocus>
         <select id="tech">
@@ -251,13 +207,17 @@ function h(string $s): string
         </select>
     </div>
 </header>
-<main id="grid">
-    <?php foreach ($projects as $p): ?>
-        <a class="card" href="../<?= rawurlencode($p['name']) ?>/"
-           style="--tech: <?= TECH_COLORS[$p['tech']] ?? '#888' ?>"
+<main class="grid" id="grid">
+    <?php foreach ($projects as $p): $vhost = $vhosts[$p['name']] ?? null; ?>
+        <a class="card" style="--tech: <?= TECH_COLORS[$p['tech']] ?? '#888' ?>"
+           <?php if ($vhost): ?>href="<?= h(vhostUrl($vhost)) ?>" target="_blank" rel="noopener"
+           <?php else: ?>href="/<?= rawurlencode($p['name']) ?>/"<?php endif; ?>
            data-name="<?= h(strtolower($p['name'])) ?>" data-tech="<?= h($p['tech']) ?>" data-mtime="<?= $p['mtime'] ?>">
             <div class="name"><?= h($p['name']) ?></div>
             <span class="badge"><?= h($p['tech']) ?></span>
+            <?php if ($vhost): ?>
+                <div class="vhost"><?= h($vhost['host']) ?> &#8599;</div>
+            <?php endif; ?>
             <div class="date" title="<?= $p['files'] ?><?= $p['truncated'] ? '+' : '' ?> fichiers analysés">
                 Modifié le <?= date('d/m/Y à H:i', $p['mtime']) ?> &middot; <?= relativeDate($p['mtime']) ?>
             </div>
